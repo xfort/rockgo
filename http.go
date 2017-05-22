@@ -7,6 +7,10 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"net"
+	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 type RockHttp struct {
@@ -20,7 +24,7 @@ func (rockhttp *RockHttp) LoadResponse(request *http.Request) (*http.Response, e
 	//	defer response.Body.Close()
 	//}
 	if err != nil {
-		if (response != nil) {
+		if response != nil {
 			response.Body.Close()
 		}
 		return nil, err
@@ -131,4 +135,41 @@ func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (str
 		return "", err
 	}
 	return response.Request.URL.String(), nil
+}
+
+func (rockhttp *RockHttp) SetProxy(urlStr string) error {
+	proxyUrl, err := url.Parse(urlStr)
+	if err != nil {
+		//log.Println("SetProxy", err, proxyUrl)
+		return err
+	}
+	transport := rockhttp.Transport.(*http.Transport)
+	transport.Proxy = http.ProxyURL(proxyUrl)
+	return nil
+}
+
+func (rockhttp *RockHttp) SetSocksProxy(urlStr string) error {
+	proxyurl, err := url.Parse(urlStr)
+	if err != nil {
+		//log.Println("SetSocketProxy()", urlStr, err)
+		return err
+	}
+
+	netDialer := &net.Dialer{
+		Timeout:   60 * time.Second,
+		KeepAlive: 60 * time.Second,
+	}
+
+	dialer, err := proxy.FromURL(proxyurl, netDialer)
+	//dialer, err := 	proxy.SOCKS5("tcp", urlStr, nil, proxy.Direct)
+	if err != nil {
+		//log.logPrintln("can't connect to the proxy:", err)
+		return err
+	}
+	transport := rockhttp.Transport.(*http.Transport)
+	transport.Dial = dialer.Dial
+	transport.DialContext = nil
+
+	transport.TLSHandshakeTimeout = 60 * time.Second
+	return nil
 }
