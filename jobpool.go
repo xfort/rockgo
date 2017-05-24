@@ -117,6 +117,17 @@ func (jobpool *JobPoolExecutor) GetAllJob() *JobSyncMap {
 	return jobpool.jobsMap
 }
 
+func (jobpool *JobPoolExecutor) GetJobById(jobid int64) JobIn {
+	if jobpool.StatusCode == Job_Status_Destroyed {
+		return nil
+	}
+	job, ok := jobpool.jobsMap.Load(jobid)
+	if ok {
+		return job
+	}
+	return nil
+}
+
 func (jobpool *JobPoolExecutor) StopAll() {
 	if jobpool.StatusCode == Job_Status_Destroyed {
 		return
