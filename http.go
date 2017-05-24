@@ -33,7 +33,15 @@ func (rockhttp *RockHttp) LoadResponse(request *http.Request) (*http.Response, e
 	return response, nil
 }
 
-func (rockhttp *RockHttp) DoRequestBytes(request *http.Request) ([]byte, error) {
+func (rockhttp *RockHttp) DoRequest(method string, urlstr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
+	request, err := http.NewRequest(method, urlstr, body)
+	if err != nil {
+		return nil, err, nil
+	}
+	return rockhttp.DoRequestBytes(request)
+}
+
+func (rockhttp *RockHttp) DoRequestBytes(request *http.Request) ([]byte, error, *http.Response) {
 	response, err := rockhttp.Do(request)
 
 	if response != nil {
@@ -41,12 +49,13 @@ func (rockhttp *RockHttp) DoRequestBytes(request *http.Request) ([]byte, error) 
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, err, response
 	}
-	return ioutil.ReadAll(response.Body)
+	resByte, err := ioutil.ReadAll(response.Body)
+	return resByte, err, response
 }
 
-func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) (string, error) {
+func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) (string, error, *http.Response) {
 
 	response, err := rockHttp.Do(request)
 
@@ -55,34 +64,30 @@ func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) 
 	}
 
 	if err != nil {
-		return "", err
+		return "", err, response
 	}
-
-	//if response.StatusCode < 200 || response.StatusCode >= 300 {
-	//	return "", errors.New("StatusCode=" + response.Status + "_url=" + request.URL.String())
-	//}
 
 	outFile, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, 0644)
 	defer outFile.Close()
 
 	if err != nil {
-		return "", err
+		return "", err, response
 	}
 
 	_, err = io.Copy(outFile, response.Body)
 
 	if err != nil {
-		return "", err
+		return "", err, response
 	}
-	return filepath, nil
+	return filepath, nil, response
 }
 
-func (rockhttp *RockHttp) DownloadFile(urlStr string, header *http.Header, filepath string) (string, error) {
+func (rockhttp *RockHttp) DownloadFile(urlStr string, header *http.Header, filepath string) (string, error, *http.Response) {
 
 	request, err := http.NewRequest("GET", urlStr, nil)
 
 	if err != nil {
-		return "", err
+		return "", err, nil
 	}
 	if header != nil {
 		request.Header = *header
@@ -90,10 +95,10 @@ func (rockhttp *RockHttp) DownloadFile(urlStr string, header *http.Header, filep
 	return rockhttp.DoRequestFile(request, filepath)
 }
 
-func (rockhttp *RockHttp) PostForm(urlStr string, header *http.Header, data url.Values) ([]byte, error) {
+func (rockhttp *RockHttp) PostForm(urlStr string, header *http.Header, data url.Values) ([]byte, error, *http.Response) {
 	req, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
 	if err != nil {
-		return nil, err
+		return nil, err, nil
 	}
 	if header != nil {
 		req.Header = *header
@@ -102,10 +107,10 @@ func (rockhttp *RockHttp) PostForm(urlStr string, header *http.Header, data url.
 	return rockhttp.DoRequestBytes(req)
 }
 
-func (rockhttp *RockHttp) PostData(urlStr string, header *http.Header, body io.Reader) ([]byte, error) {
+func (rockhttp *RockHttp) PostData(urlStr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
 	req, err := http.NewRequest("POST", urlStr, body)
 	if err != nil {
-		return nil, err
+		return nil, err, nil
 	}
 
 	if header != nil {
@@ -115,11 +120,11 @@ func (rockhttp *RockHttp) PostData(urlStr string, header *http.Header, body io.R
 }
 
 //读取最终重定向 http地址
-func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (string, error) {
+func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (string, error, *http.Response) {
 	request, err := http.NewRequest("GET", urlstr, nil)
 
 	if err != nil {
-		return "", err
+		return "", err, nil
 	}
 	if header != nil {
 		request.Header = *header
@@ -132,9 +137,9 @@ func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (str
 	}
 
 	if err != nil {
-		return "", err
+		return "", err, response
 	}
-	return response.Request.URL.String(), nil
+	return response.Request.URL.String(), nil, response
 }
 
 func (rockhttp *RockHttp) SetProxy(urlStr string) error {
