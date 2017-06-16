@@ -66,16 +66,9 @@ func (jobpool *JobPoolExecutor) start() {
 			break
 		}
 
-		if jobpool.StatusCode == Job_Status_Destroyed {
-			fmt.Println("工作池chan已销毁")
-			break
-		}
-
 		jobId, statusCode, jobTag := jobItem.GetInfo()
 		if statusCode == Job_Status_Stopped || jobId < 0 || jobTag < 0 {
-
-			fmt.Println("任务已终止", jobId, statusCode)
-
+			//fmt.Println("任务已终止", jobId, statusCode)
 			continue
 		}
 

@@ -13,6 +13,20 @@ import (
 	"golang.org/x/net/proxy"
 )
 
+const (
+	UserAgent_Android = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36"
+
+	UserAgent_IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1"
+
+	UserAgent_Chrome_Web = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
+)
+
+func NewRockHttp() *RockHttp {
+	rockhttp := &RockHttp{}
+
+	return rockhttp
+}
+
 type RockHttp struct {
 	http.Client
 }
@@ -51,6 +65,7 @@ func (rockhttp *RockHttp) DoRequestBytes(request *http.Request) ([]byte, error, 
 	if err != nil {
 		return nil, err, response
 	}
+
 	resByte, err := ioutil.ReadAll(response.Body)
 	return resByte, err, response
 }
@@ -117,6 +132,19 @@ func (rockhttp *RockHttp) PostData(urlStr string, header *http.Header, body io.R
 		req.Header = *header
 	}
 	return rockhttp.DoRequestBytes(req)
+}
+
+func (rockhttp *RockHttp) GetBytes(urlstr string, header *http.Header) ([]byte, error, *http.Response) {
+	request, err := http.NewRequest("GET", urlstr, nil)
+
+	if err != nil {
+		return nil, err, nil
+	}
+	if header != nil {
+		request.Header = *header
+	}
+
+	return rockhttp.DoRequestBytes(request)
 }
 
 //读取最终重定向 http地址
