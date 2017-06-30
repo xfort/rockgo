@@ -5,6 +5,16 @@ import (
 	"os"
 	"fmt"
 	"errors"
+	"time"
+	"sync"
+)
+
+const (
+	Log_Debug = 1
+	Log_Info  = 2
+	Log_Warn  = 4
+	Log_Error = 8
+	Log_Fatal = 16
 )
 
 var DebugTag bool = true
@@ -39,4 +49,32 @@ func Error(v ...interface{}) {
 
 func NewError(v ...interface{}) error {
 	return errors.New(fmt.Sprint(v))
+}
+
+var logMsgPool sync.Pool = sync.Pool{New: func() interface{} {
+	return &LogMsg{}
+}}
+
+type LogMsg struct {
+	Id  int64
+	LV  int
+	Tag string
+	Msg string
+}
+
+func ObtainLogMsg(tag string, lv int, v ...interface{}) *LogMsg {
+	logmsg := logMsgPool.Get().(*LogMsg)
+	logmsg.Id = time.Now().Unix()
+	logmsg.LV = lv
+	logmsg.Tag = tag
+	logmsg.Msg = fmt.Sprint(v)
+	return logmsg
+}
+
+func recycleLoMsg(logmsg *LogMsg) {
+	logmsg.Id = 0
+	logmsg.LV = 0
+	logmsg.Tag = ""
+	logmsg.Msg = ""
+	logMsgPool.Put(logmsg)
 }
