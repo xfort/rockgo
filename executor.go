@@ -160,7 +160,7 @@ type TaskIn interface {
 
 type TaskExecutor struct {
 	waitTaskChan   chan TaskIn
-	runningTaskMap map[int]TaskIn
+	runningTaskMap map[int64]TaskIn
 
 	maxRunChan  chan struct{}
 	taskTimeout <-chan time.Time
@@ -196,7 +196,6 @@ func (te *TaskExecutor) handlerTasks() {
 }
 
 func (te *TaskExecutor) startTask(taskin TaskIn) {
-	id, _, _ := taskin.GetInfo()
 	taskin.Start()
 	select {
 	case <-te.maxRunChan:
