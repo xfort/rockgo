@@ -124,3 +124,10 @@ func (rss *RssFeed) Clear() {
 	rss.TextInput = nil
 	rss.Items = nil
 }
+
+func (rss *RssFeed) Clone() *RssFeed {
+	tmpArray := []*RssFeed{rss}
+	outArray := make([]*RssFeed, 1)
+	copy(outArray, tmpArray)
+	return outArray[0]
+}
