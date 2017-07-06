@@ -3,6 +3,7 @@ package rockgo
 import (
 	"testing"
 	"log"
+	"encoding/json"
 )
 
 func TestRssFeed(t *testing.T) {
@@ -17,8 +18,10 @@ func TestRssFeed(t *testing.T) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	//resjson, err := json.Marshal(rssfeed)
-
+	resjson, err := json.Marshal(rssfeed)
+	if err==nil{
+		log.Println(string(resjson))
+	}
 	xmlbyte, err := rssfeed.ToRssXml()
 	if err != nil {
 		log.Fatalln("转成xml失败", err)
