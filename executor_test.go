@@ -12,20 +12,20 @@ func TestAsyncTaskObj(t *testing.T) {
 
 	asynctask.DoInBackgroundFunc = dobackground
 
-	err := asynctask.Start("test_start", "test")
+	err := asynctask.Start()
 
 	if err != nil {
 		log.Fatalln("启动失败", err)
 	}
 
-	log.Println(asynctask.GetStatus())
+	//log.Println(asynctask.GetStatus())
 
 	resObj, err := asynctask.GetResult(0)
 
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println(resObj, asynctask.GetStatus())
+	log.Println(resObj)
 }
 
 func dobackground(v ...interface{}) (interface{}, error) {
@@ -42,24 +42,8 @@ func TestTaskExecutor(t *testing.T) {
 		taskobj.Id = time.Now().UTC().UnixNano()
 		taskobj.Tag = "test" + strconv.Itoa(index)
 
-		taskExecutor.AddTask(taskobj)
+		//taskExecutor.AddTask(taskobj)
 	}
 
 	time.Sleep(10 * time.Minute)
-}
-
-type TaskObj struct {
-	Id     int64
-	Tag    string
-	status int
-}
-
-func (taskobj *TaskObj) Start() error {
-	time.Sleep(5 * time.Second)
-	log.Println("task over", taskobj.Id, taskobj.Tag, taskobj.status)
-	return nil
-}
-
-func (taskobj *TaskObj) GetInfo() (id int64, tag string, status int) {
-	return taskobj.Id, taskobj.Tag, taskobj.status
 }
