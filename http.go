@@ -23,6 +23,7 @@ const (
 
 func NewRockHttp() *RockHttp {
 	rockhttp := &RockHttp{}
+	rockhttp.Timeout = 60 * time.Second
 
 	return rockhttp
 }
@@ -33,7 +34,6 @@ type RockHttp struct {
 
 func (rockhttp *RockHttp) LoadResponse(request *http.Request) (*http.Response, error) {
 	response, err := rockhttp.Do(request)
-
 	//if response != nil {
 	//	defer response.Body.Close()
 	//}
@@ -43,19 +43,24 @@ func (rockhttp *RockHttp) LoadResponse(request *http.Request) (*http.Response, e
 		}
 		return nil, err
 	}
-
 	return response, nil
 }
 
 func (rockhttp *RockHttp) DoRequest(method string, urlstr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
 	request, err := http.NewRequest(method, urlstr, body)
+
 	if err != nil {
 		return nil, err, nil
 	}
+
 	return rockhttp.DoRequestBytes(request)
 }
 
 func (rockhttp *RockHttp) DoRequestBytes(request *http.Request) ([]byte, error, *http.Response) {
+
+	//ctx, cancelFunc := context.WithTimeout(context.Background(), 60*time.Second)
+	//request = request.WithContext(ctx)
+
 	response, err := rockhttp.Do(request)
 
 	if response != nil {

@@ -126,8 +126,7 @@ func (rss *RssFeed) Clear() {
 }
 
 func (rss *RssFeed) Clone() *RssFeed {
-	tmpArray := []*RssFeed{rss}
-	outArray := make([]*RssFeed, 1)
-	copy(outArray, tmpArray)
-	return outArray[0]
+	feed2 := new(RssFeed)
+	*feed2 = *rss
+	return feed2
 }
