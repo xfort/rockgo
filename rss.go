@@ -4,6 +4,7 @@ import (
 	"time"
 	"encoding/xml"
 	"sync"
+	"github.com/jinzhu/copier"
 )
 
 var rssfeedPool *sync.Pool = &sync.Pool{New: func() interface{} {
@@ -123,10 +124,13 @@ func (rss *RssFeed) Clear() {
 	rss.PubDateParsed = nil
 	rss.TextInput = nil
 	rss.Items = nil
+
+	rss.XMLName = nil
+	rss.Version = ""
 }
 
 func (rss *RssFeed) Clone() *RssFeed {
-	feed2 := new(RssFeed)
-	*feed2 = *rss
-	return feed2
+	feed2 := RssFeed{}
+	copier.Copy(feed2, *rss)
+	return &feed2
 }
