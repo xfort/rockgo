@@ -125,12 +125,12 @@ func (rss *RssFeed) Clear() {
 	rss.TextInput = nil
 	rss.Items = nil
 
-	rss.XMLName = nil
+	//rss.XMLName = nil
 	rss.Version = ""
 }
 
 func (rss *RssFeed) Clone() *RssFeed {
 	feed2 := RssFeed{}
-	copier.Copy(feed2, *rss)
+	copier.Copy(&feed2, rss)
 	return &feed2
 }
