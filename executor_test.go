@@ -2,48 +2,33 @@ package rockgo
 
 import (
 	"testing"
+	"context"
+	"github.com/pingcap/tidb/_vendor/src/github.com/juju/errors"
 	"log"
 	"time"
-	"strconv"
 )
 
-func TestAsyncTaskObj(t *testing.T) {
-	asynctask := AsyncTaskObj{Id: 0, Tag: "test"}
+func TestTaskObj(t *testing.T) {
+	taskobj := TaskObj{}
+	taskobj.Id = 1
+	taskobj.Tag = "test"
+	taskobj.DoFunc = taskobjDoFunc
 
-	asynctask.DoInBackgroundFunc = dobackground
+	ctx, _ := context.WithCancel(context.Background())
 
-	err := asynctask.Start()
-
-	if err != nil {
-		log.Fatalln("启动失败", err)
-	}
-
-	//log.Println(asynctask.GetStatus())
-
-	resObj, err := asynctask.GetResult(0)
-
+	err := taskobj.StartContext(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println(resObj)
-}
 
-func dobackground(v ...interface{}) (interface{}, error) {
-	return v[0], nil
-}
-
-func TestTaskExecutor(t *testing.T) {
-
-	taskExecutor := &TaskExecutor{}
-	taskExecutor.Start(3)
-
-	for index := 0; index < 10; index++ {
-		taskobj := &TaskObj{}
-		taskobj.Id = time.Now().UTC().UnixNano()
-		taskobj.Tag = "test" + strconv.Itoa(index)
-
-		//taskExecutor.AddTask(taskobj)
+	resobj, err := taskobj.GetResult(10 * time.Second)
+	if err != nil {
+		log.Println("task_res_err", err)
 	}
+	log.Println("task_res", resobj)
+}
 
-	time.Sleep(10 * time.Minute)
+func taskobjDoFunc(ctx context.Context, v ...interface{}) (interface{}, error) {
+	time.Sleep(5 * time.Second)
+	return nil, errors.New("错误，test， dofunc")
 }
