@@ -1,7 +1,7 @@
 package rockgo
 
 import (
-	"github.com/pingcap/tidb/_vendor/src/github.com/juju/errors"
+	"errors"
 	"time"
 	"fmt"
 	"log"

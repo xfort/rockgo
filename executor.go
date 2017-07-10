@@ -62,12 +62,8 @@ func (taskobj *TaskObj) setStatus(status int) {
 func (taskobj *TaskObj) StartContext(parentCtx context.Context, v ...interface{}) (error) {
 
 	defer func() {
-		if taskobj.CtxCancelFunc != nil {
-			taskobj.CtxCancelFunc()
-		}
-
 		if err := recover(); err != nil {
-			//log.Println("任务发生异常错误", err, taskobj.Id, taskobj.Tag)
+			log.Println("任务发生异常错误", err, taskobj.Id, taskobj.Tag)
 			taskobj.setStatus(Task_Status_Finished_Panic)
 		}
 	}()
@@ -82,7 +78,7 @@ func (taskobj *TaskObj) StartContext(parentCtx context.Context, v ...interface{}
 
 	taskobj.setStatus(Task_Status_Running)
 
-	if taskobj == nil {
+	if taskobj.resChan == nil {
 		taskobj.resChan = make(chan interface{}, 1)
 	} else {
 		chanLne := len(taskobj.resChan)
@@ -116,7 +112,9 @@ func (taskobj *TaskObj) Cancel() error {
 	if taskobj.CtxCancelFunc != nil {
 		taskobj.CtxCancelFunc()
 	}
-	taskobj.setStatus(Task_Status_Finished_Canceled)
+	if taskobj.GetStatus() == Task_Status_Running {
+		taskobj.setStatus(Task_Status_Finished_Canceled)
+	}
 	return nil
 }
 
@@ -135,17 +133,25 @@ func (taskobj *TaskObj) GetResult(dura time.Duration) (interface{}, error) {
 	select {
 	case <-taskobj.doneChan:
 		err = taskobj.err("任务被取消或者超时")
-		taskobj.setStatus(Task_Status_Finished_Canceled)
+		if taskobj.GetStatus() == Task_Status_Running {
+			taskobj.setStatus(Task_Status_Finished_Canceled)
+		}
 	case resObj, ok = <-taskobj.resChan:
 		if !ok {
 			err = taskobj.err("任务结果chan被提前关闭")
+			if taskobj.GetStatus() == Task_Status_Running {
+				taskobj.setStatus(Task_Status_Finished_Normal)
+			}
+		} else {
+			resObjTmp, ok := resObj.(error)
+			if ok {
+				err = resObjTmp
+				resObj = nil
+			}
+			if taskobj.GetStatus() == Task_Status_Running {
+				taskobj.setStatus(Task_Status_Finished_Normal)
+			}
 		}
-		resObjTmp, ok := resObj.(error)
-		if ok {
-			err = resObjTmp
-			resObj = nil
-		}
-		taskobj.setStatus(Task_Status_Finished_Normal)
 	case <-timeDura:
 		err = taskobj.err("任务超时," + dura.String())
 	}
@@ -153,6 +159,12 @@ func (taskobj *TaskObj) GetResult(dura time.Duration) (interface{}, error) {
 }
 
 func (taskobj *TaskObj) doworkfunc(ctx context.Context, reschan chan interface{}, v ...interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("任务异常panic", err)
+			taskobj.setStatus(Task_Status_Finished_Panic)
+		}
+	}()
 	if taskobj.GetStatus() != Task_Status_Running {
 		return
 	}
@@ -164,11 +176,12 @@ func (taskobj *TaskObj) doworkfunc(ctx context.Context, reschan chan interface{}
 		if err != nil {
 			resObj = err
 		}
-
+		close(reschan)
 		select {
 		case reschan <- resObj:
 		default:
 			log.Println("向结果队列添加数据失败", len(reschan), cap(reschan))
+
 		}
 		taskobj.setStatus(Task_Status_Finished_Normal)
 	}
