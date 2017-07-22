@@ -200,23 +200,10 @@ func (taskpool *TaskPoolObj) SetData(maxCore int) {
 	taskpool.numChan = make(chan struct{}, maxCore)
 }
 
-func (taskpool *TaskPoolObj) Add(num int) error {
-	var errmsg string
+func (taskpool *TaskPoolObj) Add(num int) {
 	for index := 0; index < num; index++ {
-		select {
-		case taskpool.numChan <- struct{}{}:
-		default:
-			errmsg = errmsg + "任务池chan异常，添加失败"
-		}
+		taskpool.numChan <- struct{}{}
 	}
-	if errmsg != "" {
-		return errors.New(errmsg)
-	}
-	return nil
-}
-
-func (taskpool *TaskPoolObj) AddAsync(num int) {
-	go taskpool.Add(num)
 }
 
 func (taskpool *TaskPoolObj) Done(num int) {
