@@ -60,7 +60,6 @@ func (taskobj *TaskObj) setStatus(status int) {
 }
 
 func (taskobj *TaskObj) StartContext(parentCtx context.Context, v ...interface{}) (error) {
-
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("任务发生异常错误", err, taskobj.Id, taskobj.Tag)
@@ -181,7 +180,6 @@ func (taskobj *TaskObj) doworkfunc(ctx context.Context, reschan chan interface{}
 		case reschan <- resObj:
 		default:
 			log.Println("向结果队列添加数据失败", len(reschan), cap(reschan))
-
 		}
 		taskobj.setStatus(Task_Status_Finished_Normal)
 	}
@@ -189,4 +187,53 @@ func (taskobj *TaskObj) doworkfunc(ctx context.Context, reschan chan interface{}
 
 func (taskobj *TaskObj) err(v ...interface{}) error {
 	return errors.New(fmt.Sprint(v...) + fmt.Sprintf("%d_%s_%d", taskobj.Id, taskobj.Tag, taskobj.status))
+}
+
+//类似java线程池，控制最大并发数
+type TaskPoolObj struct {
+	numChan chan struct{}
+	MaxCore int //最大并发数
+}
+
+func (taskpool *TaskPoolObj) SetData(maxCore int) {
+	taskpool.MaxCore = maxCore
+	taskpool.numChan = make(chan struct{}, maxCore)
+}
+
+func (taskpool *TaskPoolObj) Add(num int) error {
+	var errmsg string
+	for index := 0; index < num; index++ {
+		select {
+		case taskpool.numChan <- struct{}{}:
+		default:
+			errmsg = errmsg + "任务池chan异常，添加失败"
+		}
+	}
+	if errmsg != "" {
+		return errors.New(errmsg)
+	}
+	return nil
+}
+
+func (taskpool *TaskPoolObj) AddAsync(num int) {
+	go taskpool.Add(num)
+}
+
+func (taskpool *TaskPoolObj) Done(num int) {
+	if taskpool.numChan == nil {
+		return
+	}
+
+	for index := 0; index < num; index++ {
+		select {
+		case <-taskpool.numChan:
+		default:
+
+		}
+	}
+}
+
+func (taskpool *TaskPoolObj) Destroy() {
+	close(taskpool.numChan)
+	taskpool.numChan = nil
 }
