@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"golang.org/x/net/proxy"
+	"context"
 )
 
 const (
@@ -23,7 +24,7 @@ const (
 
 func NewRockHttp() *RockHttp {
 	rockhttp := &RockHttp{}
-	rockhttp.Timeout = 60 * time.Second
+	//rockhttp.Timeout = 60 * time.Second
 
 	return rockhttp
 }
@@ -32,11 +33,13 @@ type RockHttp struct {
 	http.Client
 }
 
+func (rockhttp *RockHttp) LoadResponseCtx(ctx context.Context, request *http.Request) (*http.Response, error) {
+	return rockhttp.LoadResponse(request.WithContext(ctx))
+}
+
 func (rockhttp *RockHttp) LoadResponse(request *http.Request) (*http.Response, error) {
+
 	response, err := rockhttp.Do(request)
-	//if response != nil {
-	//	defer response.Body.Close()
-	//}
 	if err != nil {
 		if response != nil {
 			response.Body.Close()
@@ -46,23 +49,25 @@ func (rockhttp *RockHttp) LoadResponse(request *http.Request) (*http.Response, e
 	return response, nil
 }
 
-func (rockhttp *RockHttp) DoRequest(method string, urlstr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
+func (rockhttp *RockHttp) DoRequestCtx(ctx context.Context, method string, urlstr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
 	request, err := http.NewRequest(method, urlstr, body)
-
 	if err != nil {
 		return nil, err, nil
 	}
+	return rockhttp.DoRequestBytes(request.WithContext(ctx))
+}
 
-	return rockhttp.DoRequestBytes(request)
+func (rockhttp *RockHttp) DoRequest(method string, urlstr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
+
+	return rockhttp.DoRequestCtx(context.TODO(), method, urlstr, header, body)
+}
+
+func (rockhttp *RockHttp) DoRequestBytesCtx(ctx context.Context, request *http.Request) ([]byte, error, *http.Response) {
+	return rockhttp.DoRequestBytes(request.WithContext(ctx))
 }
 
 func (rockhttp *RockHttp) DoRequestBytes(request *http.Request) ([]byte, error, *http.Response) {
-
-	//ctx, cancelFunc := context.WithTimeout(context.Background(), 60*time.Second)
-	//request = request.WithContext(ctx)
-
 	response, err := rockhttp.Do(request)
-
 	if response != nil {
 		defer response.Body.Close()
 	}
@@ -73,6 +78,10 @@ func (rockhttp *RockHttp) DoRequestBytes(request *http.Request) ([]byte, error, 
 
 	resByte, err := ioutil.ReadAll(response.Body)
 	return resByte, err, response
+}
+
+func (rockHttp *RockHttp) DoRequestFileCtx(ctx context.Context, request *http.Request, filepath string) (string, error, *http.Response) {
+	return rockHttp.DoRequestFile(request.WithContext(ctx), filepath)
 }
 
 func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) (string, error, *http.Response) {
@@ -102,7 +111,7 @@ func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) 
 	return filepath, nil, response
 }
 
-func (rockhttp *RockHttp) DownloadFile(urlStr string, header *http.Header, filepath string) (string, error, *http.Response) {
+func (rockhttp *RockHttp) DownloadFileCtx(ctx context.Context, urlStr string, header *http.Header, filepath string) (string, error, *http.Response) {
 
 	request, err := http.NewRequest("GET", urlStr, nil)
 
@@ -112,10 +121,14 @@ func (rockhttp *RockHttp) DownloadFile(urlStr string, header *http.Header, filep
 	if header != nil {
 		request.Header = *header
 	}
-	return rockhttp.DoRequestFile(request, filepath)
+	return rockhttp.DoRequestFile(request.WithContext(ctx), filepath)
 }
 
-func (rockhttp *RockHttp) PostForm(urlStr string, header *http.Header, data url.Values) ([]byte, error, *http.Response) {
+func (rockhttp *RockHttp) DownloadFile(urlStr string, header *http.Header, filepath string) (string, error, *http.Response) {
+	return rockhttp.DownloadFileCtx(context.TODO(), urlStr, header, filepath)
+}
+
+func (rockhttp *RockHttp) PostFormCtx(ctx context.Context, urlStr string, header *http.Header, data url.Values) ([]byte, error, *http.Response) {
 	req, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, err, nil
@@ -124,10 +137,14 @@ func (rockhttp *RockHttp) PostForm(urlStr string, header *http.Header, data url.
 		req.Header = *header
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return rockhttp.DoRequestBytes(req)
+	return rockhttp.DoRequestBytes(req.WithContext(ctx))
 }
 
-func (rockhttp *RockHttp) PostData(urlStr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
+func (rockhttp *RockHttp) PostForm(urlStr string, header *http.Header, data url.Values) ([]byte, error, *http.Response) {
+	return rockhttp.PostFormCtx(context.TODO(), urlStr, header, data)
+}
+
+func (rockhttp *RockHttp) PostDataCtx(ctx context.Context, urlStr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
 	req, err := http.NewRequest("POST", urlStr, body)
 	if err != nil {
 		return nil, err, nil
@@ -136,10 +153,14 @@ func (rockhttp *RockHttp) PostData(urlStr string, header *http.Header, body io.R
 	if header != nil {
 		req.Header = *header
 	}
-	return rockhttp.DoRequestBytes(req)
+	return rockhttp.DoRequestBytes(req.WithContext(ctx))
 }
 
-func (rockhttp *RockHttp) GetBytes(urlstr string, header *http.Header) ([]byte, error, *http.Response) {
+func (rockhttp *RockHttp) PostData(urlStr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
+	return rockhttp.PostDataCtx(context.TODO(), urlStr, header, body)
+}
+
+func (rockhttp *RockHttp) GetBytesCtx(ctx context.Context, urlstr string, header *http.Header) ([]byte, error, *http.Response) {
 	request, err := http.NewRequest("GET", urlstr, nil)
 
 	if err != nil {
@@ -148,12 +169,14 @@ func (rockhttp *RockHttp) GetBytes(urlstr string, header *http.Header) ([]byte, 
 	if header != nil {
 		request.Header = *header
 	}
-
-	return rockhttp.DoRequestBytes(request)
+	return rockhttp.DoRequestBytes(request.WithContext(ctx))
 }
 
-//读取最终重定向 http地址
-func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (string, error, *http.Response) {
+func (rockhttp *RockHttp) GetBytes(urlstr string, header *http.Header) ([]byte, error, *http.Response) {
+	return rockhttp.GetBytesCtx(context.TODO(), urlstr, header)
+}
+
+func (rockhttp *RockHttp) GetRediectUrlCtx(ctx context.Context, urlstr string, header *http.Header) (string, error, *http.Response) {
 	request, err := http.NewRequest("GET", urlstr, nil)
 
 	if err != nil {
@@ -163,7 +186,7 @@ func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (str
 		request.Header = *header
 	}
 
-	response, err := rockhttp.Do(request)
+	response, err := rockhttp.Do(request.WithContext(ctx))
 
 	if response != nil {
 		defer response.Body.Close()
@@ -173,6 +196,11 @@ func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (str
 		return "", err, response
 	}
 	return response.Request.URL.String(), nil, response
+}
+
+//读取最终重定向 http地址
+func (rockhttp *RockHttp) GetRediectUrl(urlstr string, header *http.Header) (string, error, *http.Response) {
+	return rockhttp.GetRediectUrlCtx(context.TODO(), urlstr, header)
 }
 
 func (rockhttp *RockHttp) SetProxy(urlStr string) error {
