@@ -12,6 +12,12 @@ import (
 
 	"golang.org/x/net/proxy"
 	"context"
+	"bytes"
+	"mime/multipart"
+	"path/filepath"
+	"net/textproto"
+	"fmt"
+	"log"
 )
 
 const (
@@ -53,6 +59,9 @@ func (rockhttp *RockHttp) DoRequestCtx(ctx context.Context, method string, urlst
 	request, err := http.NewRequest(method, urlstr, body)
 	if err != nil {
 		return nil, err, nil
+	}
+	if header != nil {
+		request.Header = *header
 	}
 	return rockhttp.DoRequestBytes(request.WithContext(ctx))
 }
@@ -239,3 +248,55 @@ func (rockhttp *RockHttp) SetSocksProxy(urlStr string) error {
 	transport.TLSHandshakeTimeout = 60 * time.Second
 	return nil
 }
+
+func (rockhttp *RockHttp) DoUploadFile(urlstr string, filepathStr string, fileFieldname string, fileContentType string, header http.Header, formdata url.Values) ([]byte, error, *http.Response) {
+
+	fileObj, err := os.Open(filepathStr)
+
+	if err != nil {
+		return nil, err, nil
+	}
+	defer fileObj.Close()
+
+	fileContent, err := ioutil.ReadAll(fileObj)
+	if err != nil {
+		return nil, err, nil
+	}
+
+	bodyBuffer := &bytes.Buffer{}
+	multiWriter := multipart.NewWriter(bodyBuffer)
+
+	if formdata != nil && len(formdata) > 0 {
+		for key, _ := range formdata {
+			multiWriter.WriteField(key, formdata.Get(key))
+		}
+	}
+	//writerObj, err := multiWriter.CreateFormFile(fileFieldname, filepath.Base(filepathStr))
+
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, quoteEscaper.Replace(fileFieldname), quoteEscaper.Replace(filepath.Base(filepathStr))))
+	h.Set("Content-Type", fileContentType)
+
+	writerObj, err := multiWriter.CreatePart(h)
+
+	if err != nil {
+		return nil, err, nil
+	}
+
+	filelength, err := writerObj.Write(fileContent)
+	if err != nil {
+		return nil, err, nil
+	}
+	contentType := multiWriter.FormDataContentType()
+	multiWriter.Close()
+	log.Println("file _length", filelength, contentType)
+
+	if header == nil {
+		header = http.Header{}
+	}
+	header.Set("Content-Type", contentType)
+
+	return rockhttp.DoRequestCtx(context.TODO(), "POST", urlstr, &header, bodyBuffer)
+}
+
+var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
