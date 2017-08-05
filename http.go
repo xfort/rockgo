@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"net/textproto"
 	"fmt"
-	"log"
+
 )
 
 const (
@@ -283,13 +283,14 @@ func (rockhttp *RockHttp) DoUploadFile(urlstr string, filepathStr string, fileFi
 		return nil, err, nil
 	}
 
-	filelength, err := writerObj.Write(fileContent)
+	_, err = writerObj.Write(fileContent)
 	if err != nil {
+		//log.Println("file _length", filelength, contentType)
+
 		return nil, err, nil
 	}
 	contentType := multiWriter.FormDataContentType()
 	multiWriter.Close()
-	log.Println("file _length", filelength, contentType)
 
 	if header == nil {
 		header = http.Header{}
