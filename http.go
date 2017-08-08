@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"net/textproto"
 	"fmt"
-
+	"crypto/tls"
 )
 
 const (
@@ -30,6 +30,7 @@ const (
 
 func NewRockHttp() *RockHttp {
 	rockhttp := &RockHttp{}
+	rockhttp.Transport = http.DefaultTransport
 	//rockhttp.Timeout = 60 * time.Second
 
 	return rockhttp
@@ -61,7 +62,10 @@ func (rockhttp *RockHttp) DoRequestCtx(ctx context.Context, method string, urlst
 		return nil, err, nil
 	}
 	if header != nil {
-		request.Header = *header
+		for key, _ := range *header {
+			request.Header.Set(key, header.Get(key))
+		}
+		//request.Header = *header
 	}
 	return rockhttp.DoRequestBytes(request.WithContext(ctx))
 }
@@ -160,7 +164,9 @@ func (rockhttp *RockHttp) PostDataCtx(ctx context.Context, urlStr string, header
 	}
 
 	if header != nil {
-		req.Header = *header
+		for key, _ := range *header {
+			req.Header.Set(key, header.Get(key))
+		}
 	}
 	return rockhttp.DoRequestBytes(req.WithContext(ctx))
 }
@@ -176,7 +182,10 @@ func (rockhttp *RockHttp) GetBytesCtx(ctx context.Context, urlstr string, header
 		return nil, err, nil
 	}
 	if header != nil {
-		request.Header = *header
+		for key, _ := range *header {
+			request.Header.Set(key, header.Get(key))
+		}
+
 	}
 	return rockhttp.DoRequestBytes(request.WithContext(ctx))
 }
@@ -218,8 +227,10 @@ func (rockhttp *RockHttp) SetProxy(urlStr string) error {
 		//log.Println("SetProxy", err, proxyUrl)
 		return err
 	}
+
 	transport := rockhttp.Transport.(*http.Transport)
 	transport.Proxy = http.ProxyURL(proxyUrl)
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	return nil
 }
 

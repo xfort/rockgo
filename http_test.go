@@ -4,13 +4,21 @@ import (
 	"testing"
 	"log"
 	"net/http"
+	"crypto/tls"
 )
 
 func TestWeiPHP(t *testing.T) {
 	rockhttp := NewRockHttp()
-	resByte, err, response := rockhttp.GetBytes("http://2.wei.xiushuang.com/index.php?s=/addon/WeiSite/WeiSite/lists/cate_id/4.html", nil)
+	rockhttp.SetProxy("http://127.0.0.1:8081")
+	rockhttp.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	log.Println(err, response.Status, string(resByte))
+	header := http.Header{}
+	header.Set("user-agent", "golang_ua")
+	header.Set("type", "test")
+	_, err, response := rockhttp.GetBytes("https://news.uc.cn/", &header)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println(response.Request.Header)
 
-	request, _ := http.NewRequest("get", "", nil)
 }
