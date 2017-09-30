@@ -192,25 +192,25 @@ func (taskobj *TaskObj) err(v ...interface{}) error {
 }
 
 //类似java线程池，控制最大并发数
-type TaskPoolCounterObj struct {
+type TaskPoolObj struct {
 	numChan chan struct{}
 	MaxCore int //最大并发数
 }
 
-func (taskpool *TaskPoolCounterObj) SetData(maxCore int) {
+func (taskpool *TaskPoolObj) SetData(maxCore int) {
 	taskpool.MaxCore = maxCore
 	taskpool.numChan = make(chan struct{}, maxCore)
 }
 
 //增加任务数，若任务已满，则阻塞等待
-func (taskpool *TaskPoolCounterObj) Add(num int) {
+func (taskpool *TaskPoolObj) Add(num int) {
 	for index := 0; index < num; index++ {
 		taskpool.numChan <- struct{}{}
 	}
 }
 
 //在任务完成时，必须执行此方法
-func (taskpool *TaskPoolCounterObj) Done(num int) {
+func (taskpool *TaskPoolObj) Done(num int) {
 	if taskpool.numChan == nil {
 		return
 	}
@@ -223,7 +223,7 @@ func (taskpool *TaskPoolCounterObj) Done(num int) {
 	}
 }
 
-func (taskpool *TaskPoolCounterObj) Destroy() {
+func (taskpool *TaskPoolObj) Destroy() {
 	close(taskpool.numChan)
 	taskpool.numChan = nil
 }

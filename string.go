@@ -1,6 +1,11 @@
 package rockgo
 
-func Substr(str string,start int,end int)string{
+import (
+	"crypto/sha1"
+	"encoding/hex"
+)
+
+func Substr(str string, start int, end int) string {
 	rs := []rune(str)
 	length := len(rs)
 
@@ -13,4 +18,10 @@ func Substr(str string,start int,end int)string{
 	}
 	return string(rs[start:end])
 
+}
+
+func Md5Hash(str string) string {
+	md5HashEr := sha1.New()
+	md5HashEr.Write([]byte(str))
+	return hex.EncodeToString(md5HashEr.Sum(nil))
 }
