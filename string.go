@@ -14,7 +14,7 @@ func Substr(str string, start int, end int) string {
 	}
 
 	if end < 0 || end > length {
-		return ""
+		return str
 	}
 	return string(rs[start:end])
 

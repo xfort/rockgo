@@ -149,7 +149,10 @@ func (rockhttp *RockHttp) PostFormCtx(ctx context.Context, urlStr string, header
 	if header != nil {
 		req.Header = *header
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	}
+
 	return rockhttp.DoRequestBytes(req.WithContext(ctx))
 }
 
@@ -297,7 +300,6 @@ func (rockhttp *RockHttp) DoUploadFile(urlstr string, filepathStr string, fileFi
 	_, err = writerObj.Write(fileContent)
 	if err != nil {
 		//log.Println("file _length", filelength, contentType)
-
 		return nil, err, nil
 	}
 	contentType := multiWriter.FormDataContentType()
