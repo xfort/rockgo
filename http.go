@@ -314,3 +314,21 @@ func (rockhttp *RockHttp) DoUploadFile(urlstr string, filepathStr string, fileFi
 }
 
 var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+
+type RockHttpIn interface {
+	DoRequest(ctx context.Context, url string, method string, header http.Header, body io.Reader) (error, *http.Response)
+
+	DoRequestBytes(ctx context.Context, url string, method string, header http.Header, body io.Reader) ([]byte, error, *http.Response)
+
+	DoDownloadFile(ctx context.Context, url string, method string, header http.Header, body io.Reader, targetfilepath string) (string, error, *http.Response)
+
+	DoUploadFile(ctx context.Context, url string, method string, header http.Header, httpFile *http.File) (error, *http.Response)
+	DoUploadFileBytes(ctx context.Context, url string, method string, header http.Header, httpFile *http.File) ([]byte, error, *http.Response)
+}
+
+type HttpFile struct {
+	LocalFile       string
+	FileFieldname   string
+	FileName        string
+	FileContentType string
+}

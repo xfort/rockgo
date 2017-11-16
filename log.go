@@ -3,78 +3,81 @@ package rockgo
 import (
 	"log"
 	"os"
-	"fmt"
+	"path/filepath"
 	"errors"
+	"github.com/xfort/rockgo/proto"
 	"time"
-	"sync"
+	"fmt"
+	"encoding/json"
+	"strconv"
 )
 
-const (
-	Log_Debug = 1
-	Log_Info  = 2
-	Log_Warn  = 4
-	Log_Error = 8
-	Log_Fatal = 16
-)
-
-var DebugTag bool = true
-
-var rockLogger = log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
-
-type RockLog struct {
-	log.Logger
+type RockLogger struct {
+	goLogger *log.Logger
+	logFile  string
 }
 
-func (rocklog *RockLog) Warn(v ...interface{}) {
-	rocklog.Println(v)
-	//log.Println()
+var Defaultlogger = NewRockLogger()
+
+func NewRockLogger() *RockLogger {
+	dirFile, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		dirFile = os.TempDir()
+	}
+	dirFile = filepath.Join(dirFile, "log")
+
+	rockLogger := &RockLogger{}
+	filename := time.Now().Format("2006-01-02_15_04")
+	logFILE := filepath.Join(dirFile, filename+strconv.FormatInt(time.Now().Unix(), 10)+".log")
+	rockLogger.InitData(logFILE)
+	return rockLogger
 }
 
-func Debug(v ...interface{}) {
-	rockLogger.Output(2, fmt.Sprintln("debug", v))
+func (rl *RockLogger) InitData(logfile string) error {
+	rl.logFile = logfile
+
+	err := os.MkdirAll(filepath.Dir(logfile), 0666)
+	if err != nil {
+		return errors.New("创建logfile文件夹失败" + err.Error() + logfile)
+	}
+	logFileObj, err := os.OpenFile(logfile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+	if err != nil {
+		return errors.New("打开logfile失败" + logfile + err.Error())
+	}
+
+	rl.goLogger = log.New(logFileObj, "", log.Ldate|log.Ltime|log.Llongfile)
+	return nil
 }
 
-func Info(v ...interface{}) {
-	rockLogger.Output(2, fmt.Sprintln("info", v))
+func (rl *RockLogger) Log(logObj *proto.LogObj) {
+	jsonByte, err := json.Marshal(logObj)
+	if err != nil {
+		log.Println("LogObj转为json失败", err.Error())
+	}
+	rl.goLogger.Output(3, fmt.Sprintln(string(jsonByte))+fmt.Sprintln())
 }
 
-func Warn(v ...interface{}) {
-	rockLogger.Output(2, fmt.Sprintln("warn", v))
-
+func (rl *RockLogger) LogMsg(lv proto.LogLevel, tag string, msg string) {
+	logObj := &proto.LogObj{Level: lv, Tag: tag, Message: msg, TimestampUTC: time.Now().UTC().Unix()}
+	rl.Log(logObj)
 }
 
-func Error(v ...interface{}) {
-	rockLogger.Output(2, fmt.Sprintln("error", v))
+func Debug(tga string, v ...interface{}) {
+	Defaultlogger.LogMsg(proto.LogLevel_Debug, tga, fmt.Sprint(v))
 }
 
-func NewError(v ...interface{}) error {
-	return errors.New(fmt.Sprint(v))
+func Info(tga string, v ...interface{}) {
+	Defaultlogger.LogMsg(proto.LogLevel_Info, tga, fmt.Sprint(v))
 }
 
-var logMsgPool sync.Pool = sync.Pool{New: func() interface{} {
-	return &LogMsg{}
-}}
-
-type LogMsg struct {
-	Id  int64
-	LV  int
-	Tag string
-	Msg string
+func Warn(tga string, v ...interface{}) {
+	Defaultlogger.LogMsg(proto.LogLevel_Warn, tga, fmt.Sprint(v))
 }
 
-func ObtainLogMsg(tag string, lv int, v ...interface{}) *LogMsg {
-	logmsg := logMsgPool.Get().(*LogMsg)
-	logmsg.Id = time.Now().Unix()
-	logmsg.LV = lv
-	logmsg.Tag = tag
-	logmsg.Msg = fmt.Sprint(v)
-	return logmsg
+func Error(tga string, v ...interface{}) {
+	Defaultlogger.LogMsg(proto.LogLevel_Error, tga, fmt.Sprint(v))
 }
 
-func recycleLoMsg(logmsg *LogMsg) {
-	logmsg.Id = 0
-	logmsg.LV = 0
-	logmsg.Tag = ""
-	logmsg.Msg = ""
-	logMsgPool.Put(logmsg)
+func Fatal(tga string, v ...interface{}) {
+	Defaultlogger.LogMsg(proto.LogLevel_Fatal, tga, fmt.Sprint(v))
 }
