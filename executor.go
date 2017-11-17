@@ -15,6 +15,8 @@ const (
 	Task_Status_Finished_Canceled = 4 //被取消结束
 )
 
+type DoWorkFunc func(ctx context.Context, v ...interface{}) (interface{}, error)
+
 //类似java线程池，控制最大并发数
 type TaskPoolObj struct {
 	numChan chan struct{}
