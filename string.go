@@ -1,7 +1,7 @@
 package rockgo
 
 import (
-	"crypto/sha1"
+	"crypto/md5"
 	"encoding/hex"
 )
 
@@ -21,7 +21,7 @@ func Substr(str string, start int, end int) string {
 }
 
 func Md5Hash(str string) string {
-	md5HashEr := sha1.New()
+	md5HashEr := md5.New()
 	md5HashEr.Write([]byte(str))
 	return hex.EncodeToString(md5HashEr.Sum(nil))
 }

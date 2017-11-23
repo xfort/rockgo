@@ -9,17 +9,29 @@ import (
 	"time"
 	"fmt"
 	"encoding/json"
-	"strconv"
 )
+
+type RockLogIn interface {
+	Log(obj *proto.LogObj)
+	Debug(tag string, v ...interface{})
+	Info(tag string, v ...interface{})
+	Warn(tag string, v ...interface{})
+	Error(tag string, v ...interface{})
+	Fatal(tag string, v ...interface{})
+}
 
 type RockLogger struct {
 	goLogger *log.Logger
 	logFile  string
 }
 
-var Defaultlogger = NewRockLogger()
+var Defaultlogger *RockLogger
 
-func NewRockLogger() *RockLogger {
+func init() {
+	Defaultlogger = NewRockLogger("rock")
+}
+
+func NewRockLogger(logfilepre string) *RockLogger {
 	dirFile, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		dirFile = os.TempDir()
@@ -27,8 +39,8 @@ func NewRockLogger() *RockLogger {
 	dirFile = filepath.Join(dirFile, "log")
 
 	rockLogger := &RockLogger{}
-	filename := time.Now().Format("2006-01-02_15_04")
-	logFILE := filepath.Join(dirFile, filename+strconv.FormatInt(time.Now().Unix(), 10)+".log")
+	filename := time.Now().Format("2006-01-02")
+	logFILE := filepath.Join(dirFile, logfilepre+filename+".log")
 	rockLogger.InitData(logFILE)
 	return rockLogger
 }
@@ -62,6 +74,32 @@ func (rl *RockLogger) LogMsg(lv proto.LogLevel, tag string, msg string) {
 	rl.Log(logObj)
 }
 
+func (rl *RockLogger) Debug(tag string, v ...interface{}) {
+	logObj := &proto.LogObj{Level: proto.LogLevel_Debug, Tag: tag, Message: fmt.Sprint(v...), TimestampUTC: time.Now().UTC().Unix()}
+	rl.Log(logObj)
+	log.Println(tag, v)
+}
+
+func (rl *RockLogger) Info(tag string, v ...interface{}) {
+	logObj := &proto.LogObj{Level: proto.LogLevel_Info, Tag: tag, Message: fmt.Sprint(v...), TimestampUTC: time.Now().UTC().Unix()}
+	rl.Log(logObj)
+	log.Println(tag, v)
+}
+func (rl *RockLogger) Warn(tag string, v ...interface{}) {
+	logObj := &proto.LogObj{Level: proto.LogLevel_Warn, Tag: tag, Message: fmt.Sprint(v...), TimestampUTC: time.Now().UTC().Unix()}
+	rl.Log(logObj)
+	log.Println(tag, v)
+}
+func (rl *RockLogger) Error(tag string, v ...interface{}) {
+	logObj := &proto.LogObj{Level: proto.LogLevel_Error, Tag: tag, Message: fmt.Sprint(v...), TimestampUTC: time.Now().UTC().Unix()}
+	rl.Log(logObj)
+	log.Println(tag, v)
+}
+func (rl *RockLogger) Fatal(tag string, v ...interface{}) {
+	logObj := &proto.LogObj{Level: proto.LogLevel_Fatal, Tag: tag, Message: fmt.Sprint(v...), TimestampUTC: time.Now().UTC().Unix()}
+	rl.Log(logObj)
+	log.Println(tag, v)
+}
 func Debug(tga string, v ...interface{}) {
 	Defaultlogger.LogMsg(proto.LogLevel_Debug, tga, fmt.Sprint(v))
 }
