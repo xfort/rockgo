@@ -27,16 +27,19 @@ type RockLogger struct {
 
 var Defaultlogger *RockLogger
 
-func init() {
-	Defaultlogger = NewRockLogger("rock")
+func InitDefaultLog() {
+	Defaultlogger = NewRockLogger("", "rock")
 }
 
-func NewRockLogger(logfilepre string) *RockLogger {
-	dirFile, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		dirFile = os.TempDir()
+func NewRockLogger(dirFile, logfilepre string) *RockLogger {
+	if dirFile == "" {
+		var err error
+		dirFile, err = filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			dirFile = os.TempDir()
+		}
+		dirFile = filepath.Join(dirFile, "log")
 	}
-	dirFile = filepath.Join(dirFile, "log")
 
 	rockLogger := &RockLogger{}
 	filename := time.Now().Format("2006-01-02")
@@ -66,7 +69,10 @@ func (rl *RockLogger) Log(logObj *proto.LogObj) {
 	if err != nil {
 		log.Println("LogObj转为json失败", err.Error())
 	}
-	rl.goLogger.Output(3, fmt.Sprintln(string(jsonByte))+fmt.Sprintln())
+	if jsonByte != nil {
+		rl.goLogger.Output(3, fmt.Sprintln(string(jsonByte))+fmt.Sprintln(""))
+	}
+
 }
 
 func (rl *RockLogger) LogMsg(lv proto.LogLevel, tag string, msg string) {
