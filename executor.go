@@ -7,13 +7,6 @@ import (
 	"strconv"
 )
 
-const (
-	Task_Status_Pending           = 0
-	Task_Status_Running           = 1 //正常运行中
-	Task_Status_Finished_Normal   = 2 //正常结束
-	Task_Status_Finished_Panic    = 3 //出现异常，recover()返回错误
-	Task_Status_Finished_Canceled = 4 //被取消结束
-)
 
 type DoWorkFunc func(ctx context.Context, v ...interface{}) (interface{}, error)
 
@@ -33,6 +26,7 @@ func (taskpool *TaskPoolObj) Add(num int) {
 	for index := 0; index < num; index++ {
 		taskpool.numChan <- struct{}{}
 	}
+
 }
 
 //在任务完成时，必须执行此方法
