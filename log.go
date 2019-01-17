@@ -1,15 +1,12 @@
 package rockgo
 
 import (
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
-	"errors"
-	"github.com/xfort/rockgo/proto"
-	"time"
-	"fmt"
-	"encoding/json"
 	"strconv"
+	"time"
 )
 
 type RockLogger struct {
@@ -49,35 +46,5 @@ func (rl *RockLogger) InitData(logfile string) error {
 	return nil
 }
 
-func (rl *RockLogger) Log(logObj *proto.LogObj) {
-	jsonByte, err := json.Marshal(logObj)
-	if err != nil {
-		log.Println("LogObj转为json失败", err.Error())
-	}
-	rl.goLogger.Output(3, fmt.Sprintln(string(jsonByte))+fmt.Sprintln())
-}
 
-func (rl *RockLogger) LogMsg(lv proto.LogLevel, tag string, msg string) {
-	logObj := &proto.LogObj{Level: lv, Tag: tag, Message: msg, TimestampUTC: time.Now().UTC().Unix()}
-	rl.Log(logObj)
-}
 
-func Debug(tga string, v ...interface{}) {
-	Defaultlogger.LogMsg(proto.LogLevel_Debug, tga, fmt.Sprint(v))
-}
-
-func Info(tga string, v ...interface{}) {
-	Defaultlogger.LogMsg(proto.LogLevel_Info, tga, fmt.Sprint(v))
-}
-
-func Warn(tga string, v ...interface{}) {
-	Defaultlogger.LogMsg(proto.LogLevel_Warn, tga, fmt.Sprint(v))
-}
-
-func Error(tga string, v ...interface{}) {
-	Defaultlogger.LogMsg(proto.LogLevel_Error, tga, fmt.Sprint(v))
-}
-
-func Fatal(tga string, v ...interface{}) {
-	Defaultlogger.LogMsg(proto.LogLevel_Fatal, tga, fmt.Sprint(v))
-}
