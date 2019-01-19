@@ -1,23 +1,24 @@
 package rockgo
 
 import (
-	"net/http"
-	"io/ioutil"
-	"os"
+	"encoding/json"
 	"io"
-	"net/url"
-	"strings"
+	"io/ioutil"
 	"net"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 
-	"golang.org/x/net/proxy"
-	"context"
 	"bytes"
-	"mime/multipart"
-	"path/filepath"
-	"net/textproto"
-	"fmt"
+	"context"
 	"crypto/tls"
+	"fmt"
+	"golang.org/x/net/proxy"
+	"mime/multipart"
+	"net/textproto"
+	"path/filepath"
 )
 
 const (
@@ -152,7 +153,6 @@ func (rockhttp *RockHttp) PostFormCtx(ctx context.Context, urlStr string, header
 	if req.Header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 	}
-
 	return rockhttp.DoRequestBytes(req.WithContext(ctx))
 }
 
@@ -160,6 +160,24 @@ func (rockhttp *RockHttp) PostForm(urlStr string, header *http.Header, data url.
 	return rockhttp.PostFormCtx(context.TODO(), urlStr, header, data)
 }
 
+func (rockhttp *RockHttp) PostJson(ctx context.Context, urlStr string, header *http.Header, obj interface{}) ([]byte, error, *http.Response) {
+	objJson, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err, nil
+	}
+	req, err := http.NewRequest("POST", urlStr, bytes.NewReader(objJson))
+	if err != nil {
+		return nil, err, nil
+	}
+	if header != nil {
+		req.Header = *header
+	}
+	if req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	}
+	return rockhttp.DoRequestBytes(req.WithContext(ctx))
+
+}
 func (rockhttp *RockHttp) PostDataCtx(ctx context.Context, urlStr string, header *http.Header, body io.Reader) ([]byte, error, *http.Response) {
 	req, err := http.NewRequest("POST", urlStr, body)
 	if err != nil {

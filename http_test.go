@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var rockhttpClient := NewRockHttp()
+var rockhttpClient = NewRockHttp()
 
 func TestWeiPHP(t *testing.T) {
 	rockhttpClient.SetProxy("http://127.0.0.1:8081")
