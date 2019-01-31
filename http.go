@@ -98,7 +98,7 @@ func (rockHttp *RockHttp) DoRequestFileCtx(ctx context.Context, request *http.Re
 	return rockHttp.DoRequestFile(request.WithContext(ctx), filepath)
 }
 
-func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) (string, error, *http.Response) {
+func (rockHttp *RockHttp) DoRequestFile(request *http.Request, outFilePath string) (string, error, *http.Response) {
 
 	response, err := rockHttp.Do(request)
 
@@ -110,7 +110,9 @@ func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) 
 		return "", err, response
 	}
 
-	outFile, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, 0644)
+	outFilePathTemp := outFilePath + ".download"
+
+	outFile, err := os.OpenFile(outFilePathTemp, os.O_CREATE|os.O_RDWR, 0644)
 	defer outFile.Close()
 
 	if err != nil {
@@ -122,7 +124,11 @@ func (rockHttp *RockHttp) DoRequestFile(request *http.Request, filepath string) 
 	if err != nil {
 		return "", err, response
 	}
-	return filepath, nil, response
+	err = os.Rename(outFilePathTemp, outFilePath)
+	if err != nil {
+		return "", err, response
+	}
+	return outFilePath, nil, response
 }
 
 func (rockhttp *RockHttp) DownloadFileCtx(ctx context.Context, urlStr string, header *http.Header, filepath string) (string, error, *http.Response) {
