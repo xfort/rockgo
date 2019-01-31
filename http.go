@@ -113,14 +113,15 @@ func (rockHttp *RockHttp) DoRequestFile(request *http.Request, outFilePath strin
 	outFilePathTemp := outFilePath + ".download"
 
 	outFile, err := os.OpenFile(outFilePathTemp, os.O_CREATE|os.O_RDWR, 0644)
-	defer outFile.Close()
+	//defer outFile.Close()
 
 	if err != nil {
+		outFile.Close()
 		return "", err, response
 	}
 
 	_, err = io.Copy(outFile, response.Body)
-
+	outFile.Close()
 	if err != nil {
 		return "", err, response
 	}
