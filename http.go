@@ -13,7 +13,6 @@ import (
 
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"golang.org/x/net/proxy"
 	"mime/multipart"
@@ -258,7 +257,7 @@ func (rockhttp *RockHttp) SetProxy(urlStr string) error {
 
 	transport := rockhttp.Transport.(*http.Transport)
 	transport.Proxy = http.ProxyURL(proxyUrl)
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	//transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	return nil
 }
 
@@ -284,7 +283,7 @@ func (rockhttp *RockHttp) SetSocksProxy(urlStr string) error {
 	transport.Dial = dialer.Dial
 	transport.DialContext = nil
 
-	transport.TLSHandshakeTimeout = 60 * time.Second
+	transport.TLSHandshakeTimeout = 10 * time.Second
 	return nil
 }
 
